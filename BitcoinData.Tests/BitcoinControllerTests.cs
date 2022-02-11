@@ -16,20 +16,21 @@ namespace BitcoinData.Tests;
 public class BitcoinControllerTests
 {
     private readonly Fixture _fixture = new();
-    private readonly HttpClientInterceptorOptions _options = new();
-    private readonly HttpRequestInterceptionBuilder _builder = new();
+    private readonly HttpClientInterceptorOptions _httpClientInterceptorOptions = new();
+    private readonly HttpRequestInterceptionBuilder _httpRequestInterceptionBuilder = new();
     private readonly Mock<IHttpClientFactory> _httpClientFactory = new();
+
     private const string _apiHost = "api.coingecko.com";
     private const string _apiPath = "api/v3/coins/bitcoin";
     private const string _apiQuery = "tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false";
 
     public BitcoinControllerTests()
     {
-        _options.ThrowsOnMissingRegistration();
+        _httpClientInterceptorOptions.ThrowsOnMissingRegistration();
     }
 
     [Fact]
-    public async Task BitcoinController_Should_Return_Ok_With_Price()
+    public async Task BitcoinController_Should_Return_Success_With_Price()
     {
         var expectedCoinResponse = _fixture
             .Build<CoinInfo>()
@@ -40,7 +41,7 @@ public class BitcoinControllerTests
                     .Create())
             .Create();
 
-        _builder
+        _httpRequestInterceptionBuilder
             .Requests()
             .ForGet()
             .ForHttps()
@@ -50,12 +51,12 @@ public class BitcoinControllerTests
             .Responds()
             .WithStatus(200)
             .WithJsonContent(expectedCoinResponse)
-            .RegisterWith(_options);
+            .RegisterWith(_httpClientInterceptorOptions);
 
         _httpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>()))
-            .Returns(_options.CreateHttpClient());
+            .Returns(_httpClientInterceptorOptions.CreateHttpClient());
 
-        var client = CreateApiHttpClient();
+        using var client = CreateApiHttpClient();
 
         var response = await client.GetAsync("/api/Bitcoin");
 
@@ -63,7 +64,7 @@ public class BitcoinControllerTests
     }
 
     [Fact]
-    public async Task BitcoinController_Should_Return_NoData_When_GBP_not_returned()
+    public async Task BitcoinController_Should_Return_Success_With_NoData_When_GBP_not_returned()
     {
         var expectedCoinResponse = _fixture
             .Build<CoinInfo>()
@@ -74,7 +75,7 @@ public class BitcoinControllerTests
                     .Create())
             .Create();
 
-        _builder
+        _httpRequestInterceptionBuilder
             .Requests()
             .ForGet()
             .ForHttps()
@@ -84,12 +85,12 @@ public class BitcoinControllerTests
             .Responds()
             .WithStatus(200)
             .WithJsonContent(expectedCoinResponse)
-            .RegisterWith(_options);
+            .RegisterWith(_httpClientInterceptorOptions);
 
         _httpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>()))
-            .Returns(_options.CreateHttpClient());
+            .Returns(_httpClientInterceptorOptions.CreateHttpClient());
 
-        var client = CreateApiHttpClient();
+        using var client = CreateApiHttpClient();
 
         var response = await client.GetAsync("/api/Bitcoin");
         var content = await response.Content.ReadAsStringAsync();
@@ -101,7 +102,7 @@ public class BitcoinControllerTests
     [Fact]
     public async Task BitcoinController_Should_break_When_coinGecko_fails()
     {
-        _builder
+        _httpRequestInterceptionBuilder
             .Requests()
             .ForGet()
             .ForHttps()
@@ -110,12 +111,12 @@ public class BitcoinControllerTests
             .ForQuery(_apiQuery)
             .Responds()
             .WithStatus(500)
-            .RegisterWith(_options);
+            .RegisterWith(_httpClientInterceptorOptions);
 
         _httpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>()))
-            .Returns(_options.CreateHttpClient());
+            .Returns(_httpClientInterceptorOptions.CreateHttpClient());
 
-        var client = CreateApiHttpClient();
+        using var client = CreateApiHttpClient();
 
         var response = await client.GetAsync("/api/Bitcoin");
 
